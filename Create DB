@@ -1,0 +1,182 @@
+-- DROP DATABASE IF EXISTS TradersDB;
+CREATE DATABASE TradersDB;
+USE TradersDB;
+
+--  Create Categories Table 
+CREATE TABLE Categories(
+    CategoryID INTEGER NOT NULL AUTO_INCREMENT,
+    CategoryName VARCHAR(30) NOT NULL,
+    Description MEDIUMTEXT,
+    Picture LONGBLOB,
+    CONSTRAINT PK_Categories PRIMARY KEY (CategoryID)
+);
+
+ALTER TABLE Categories MODIFY Picture BLOB; 
+
+CREATE INDEX CategoryName ON Categories (CategoryName);
+
+-- Create Table Customers
+CREATE TABLE Customers (
+    CustomerID VARCHAR(5) NOT NULL,
+    CompanyName VARCHAR(40) NOT NULL,
+    ContactName VARCHAR(30),
+    ContactTitle VARCHAR(30),
+    Address VARCHAR(60),
+    City VARCHAR(15),
+    Region VARCHAR(15),
+    PostalCode VARCHAR(10),
+    Country VARCHAR(15),
+    Phone VARCHAR(24),
+    Fax VARCHAR(24),
+    CONSTRAINT PK_Customers PRIMARY KEY (CustomerID)
+);
+
+CREATE INDEX City ON Customers (City);
+
+CREATE INDEX CompanyName ON Customers (CompanyName);
+
+CREATE INDEX PostalCode ON Customers (PostalCode);
+
+CREATE INDEX Region ON Customers (Region);
+
+DROP TABLE Employees ;
+-- Create Table Employees
+CREATE TABLE Employees (
+    EmployeeID MEDIUMINT(8) NOT NULL AUTO_INCREMENT,
+    LastName VARCHAR(20) NOT NULL,
+    FirstName VARCHAR(10) NOT NULL,
+    Title VARCHAR(30),
+    TitleOfCourtesy VARCHAR(25),
+    BirthDate DATETIME,
+    HireDate DATETIME,
+    Address VARCHAR(60),
+    City VARCHAR(15),
+    Region VARCHAR(15),
+    PostalCode VARCHAR(10),
+    Country VARCHAR(15),
+    HomePhone VARCHAR(24),
+    Extension VARCHAR(4),
+    Photo LONGBLOB,
+    Notes MEDIUMTEXT NOT NULL,
+    ReportsTo MEDIUMINT(8),
+    PhotoPath VARCHAR(255),
+	Salary FLOAT,
+    CONSTRAINT PK_Employees PRIMARY KEY (EmployeeID)
+);
+
+ALTER TABLE Employees CHANGE COLUMN Title  JobTitle VARCHAR(30); 
+
+SELECT * FROM Employees;
+
+CREATE INDEX LastName ON Employees (LastName);
+
+CREATE INDEX PostalCode ON Employees (PostalCode);
+
+-- Create Table Region
+CREATE TABLE Region (
+    RegionID INTEGER NOT NULL,
+    RegionDescription VARCHAR(50) NOT NULL,
+    CONSTRAINT PK_Region PRIMARY KEY (RegionID)
+);
+
+-- Create Table Territories
+CREATE TABLE Territories (
+    TerritoryID VARCHAR(20) NOT NULL,
+    TerritoryDescription VARCHAR(50) NOT NULL,
+    RegionID INTEGER NOT NULL,
+    CONSTRAINT PK_Territories PRIMARY KEY (TerritoryID)
+);
+
+
+-- Create Table EmployeeTerritories
+CREATE TABLE EmployeeTerritories (
+    EmployeeID MEDIUMINT(8) NOT NULL,
+    TerritoryID VARCHAR(20) NOT NULL,
+    CONSTRAINT PK_EmployeeTerritories PRIMARY KEY (EmployeeID, TerritoryID)
+);
+
+-- Create Table Order 
+CREATE TABLE Orders (
+    OrderID INTEGER(10) NOT NULL,
+    CustomerID VARCHAR(5),
+    EmployeeID MEDIUMINT(8),
+    OrderDate DATETIME,
+    RequiredDate DATETIME,
+    ShippedDate DATETIME,
+    ShipVia TINYINT(3),
+    Freight DECIMAL(10,4) DEFAULT 0,
+    ShipName VARCHAR(40),
+    ShipAddress VARCHAR(60),
+    ShipCity VARCHAR(15),
+    ShipRegion VARCHAR(15),
+    ShipPostalCode VARCHAR(10),
+    ShipCountry VARCHAR(15),
+    CONSTRAINT PK_Orders PRIMARY KEY (OrderID)
+);
+
+ALTER TABLE Orders MODIFY ShipVia INTEGER; 
+
+CREATE INDEX OrderDate ON Orders (OrderDate);
+
+CREATE INDEX ShippedDate ON Orders (ShippedDate);
+
+CREATE INDEX ShipPostalCode ON Orders (ShipPostalCode);
+
+-- Create Table Products 
+CREATE TABLE Products (
+    ProductID INTEGER NOT NULL AUTO_INCREMENT,
+    ProductName VARCHAR(40) NOT NULL,
+    SupplierID INTEGER,
+    CategoryID INTEGER,
+    QuantityPerUnit VARCHAR(20),
+    UnitPrice DECIMAL(10,4) DEFAULT 0,
+    UnitsInStock SMALLINT(2) DEFAULT 0,
+    UnitsOnOrder SMALLINT(2) DEFAULT 0,
+    ReorderLevel SMALLINT(2) DEFAULT 0,
+    Discontinued BIT NOT NULL DEFAULT 0,
+    CONSTRAINT PK_Products PRIMARY KEY (ProductID)
+);
+CREATE INDEX ProductName ON Products (ProductName);
+
+-- Create Table Order Details
+CREATE TABLE OrderDetails (
+    OrderID INTEGER(10) NOT NULL,
+    ProductID INTEGER NOT NULL,
+    UnitPrice DECIMAL(10,4) NOT NULL DEFAULT 0,
+    Quantity SMALLINT(2) NOT NULL DEFAULT 1,
+    Discount REAL(8,2) NOT NULL DEFAULT 0,
+    CONSTRAINT PK_OrderDetails PRIMARY KEY (OrderID, ProductID)
+);
+
+
+ 
+-- Create Table Shippers 
+CREATE TABLE Shippers (
+    ShipperID INTEGER NOT NULL AUTO_INCREMENT,
+    CompanyName VARCHAR(40) NOT NULL,
+    Phone VARCHAR(24),
+    CONSTRAINT PK_Shippers PRIMARY KEY (ShipperID)
+);
+
+-- Create Table Suppliers
+CREATE TABLE Suppliers (
+    SupplierID INTEGER NOT NULL AUTO_INCREMENT,
+    CompanyName VARCHAR(40) NOT NULL,
+    ContactName VARCHAR(30),
+    ContactTitle VARCHAR(30),
+    Address VARCHAR(60),
+    City VARCHAR(15),
+    Region VARCHAR(15),
+    PostalCode VARCHAR(10),
+    Country VARCHAR(15),
+    Phone VARCHAR(24),
+    Fax VARCHAR(24),
+    HomePage MEDIUMTEXT,
+    CONSTRAINT PK_Suppliers PRIMARY KEY (SupplierID)
+);
+
+CREATE INDEX CompanyName ON Suppliers (CompanyName);
+
+CREATE INDEX PostalCode ON Suppliers (PostalCode);
+
+
