@@ -1,0 +1,500 @@
+USE TradersDB;
+
+-- 2. Setting Primary and Foreignkey constraints to create to relations between the table....
+
+ALTER TABLE Employees
+ADD CONSTRAINT
+FK_Employees_Employees
+FOREIGN KEY (ReportsTo)
+REFERENCES Employees (EmployeeID);
+
+ALTER TABLE EmployeeTerritories
+ADD CONSTRAINT
+FK_EmployeeTerritories_Employees 
+FOREIGN KEY (EmployeeID)
+REFERENCES Employees (EmployeeID);
+
+ALTER TABLE EmployeeTerritories
+ADD CONSTRAINT 
+FK_EmployeeTerritories_Territories
+FOREIGN KEY (TerritoryID)
+REFERENCES Territories (TerritoryID);
+
+ALTER TABLE OrderDetails
+ADD CONSTRAINT 
+FK_Order_Details_Orders
+FOREIGN KEY (OrderID)
+REFERENCES Orders (OrderID);
+
+ALTER TABLE OrderDetails
+ADD CONSTRAINT 
+FK_Order_Details_Products
+FOREIGN KEY (ProductID)
+REFERENCES Products (ProductID);
+
+ALTER TABLE Orders
+ADD CONSTRAINT 
+FK_Orders_Customers
+FOREIGN KEY (CustomerID)
+REFERENCES Customers (CustomerID);
+
+ALTER TABLE Orders 
+ADD CONSTRAINT 
+FK_Orders_Employees
+FOREIGN KEY (EmployeeID)
+REFERENCES Employees (EmployeeID);
+
+ALTER TABLE Orders 
+ADD CONSTRAINT 
+FK_Orders_Shippers 
+FOREIGN KEY (ShipVia)
+REFERENCES Shippers (ShipperID);
+
+ALTER TABLE Products
+ADD CONSTRAINT 
+FK_Products_Categories
+FOREIGN KEY (CategoryID)
+REFERENCES Categories (CategoryID);
+
+ALTER TABLE Products
+ADD CONSTRAINT 
+FK_Products_Suppliers 
+FOREIGN KEY (SupplierID)
+REFERENCES Suppliers (SupplierID);
+
+ALTER TABLE Territories
+ADD CONSTRAINT 
+FK_Territories_Region 
+FOREIGN KEY (RegionID)
+REFERENCES Region (RegionID);
+
+-- Add Group by and Having Clause
+-- Here ,Selected last name of Employees who have done more than 10 orders
+SELECT  * From Employees;
+SELECT * From Orders;
+
+SELECT Employees.LastName, COUNT(Orders.OrderID) AS NumberOfOrders
+FROM (Orders
+INNER JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID)
+GROUP BY LastName
+HAVING COUNT(Orders.OrderID) > 10;
+
+
+SELECT * FROM Customers;
+-- In this Query , Counting the number of customers by country where number of customer is greater than 5 displayed in descending order of count of customer. 
+SELECT Country, COUNT(CustomerID)
+FROM Customers
+GROUP BY Country
+HAVING COUNT(CustomerID) > 5
+ORDER BY COUNT(CustomerID) DESC; 
+
+-- In this Query ,Showing the name of managers of all employees.
+SELECT e.EmployeeID 'Emp_Id',concat(e.FirstName,' ',e.LastName) 'Employee', 
+m.EmployeeID 'Mgr_Id', concat(m.FirstName,' ',m.LastName)  'Manager' 
+FROM employees e 
+JOIN employees m 
+ON (e.ReportsTo = m.EmployeeID);
+
+ --  Shows the no of direct reportees
+SELECT m.ReportsTo,
+       count(*)
+FROM employees e,
+	 employees m
+WHERE m.ReportsTo = e.EmployeeID
+GROUP BY m.ReportsTo
+ORDER BY m.ReportsTo ASC;
+
+-- ---------------------------- VIEW Script-----------------------------
+
+-- In this View, creating list of products where Discontinued=0.
+CREATE VIEW List_of_products
+AS
+SELECT 
+	Products.*, 
+	Categories.CategoryName
+FROM Categories 
+   INNER JOIN Products ON Categories.CategoryID = Products.CategoryID
+WHERE (((Products.Discontinued)=0));
+
+SELECT * FROM List_of_products;
+
+-- SELECT ProductID, ProductName FROM Products WHERE Discontinued=1;
+
+-- Add View "Current Product List" 
+-- Here ,It is showing only the products which are currently in supply.
+CREATE VIEW Current_Product_List
+AS
+SELECT ProductID,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+       ProductName 
+FROM Products 
+WHERE Discontinued=0;
+
+SELECT * FROM Current_Product_List;
+
+--   Add View "Invoices"   -- This generate Invoice .
+CREATE VIEW Invoices
+AS
+SELECT Orders.ShipName,
+       Orders.ShipAddress,
+       Orders.ShipCity,
+       Orders.ShipRegion, 
+       Orders.ShipPostalCode,
+       Orders.ShipCountry,
+       Orders.CustomerID,
+       Customers.CompanyName AS CustomerName, 
+       Customers.Address,
+       Customers.City,
+       Customers.Region,
+       Customers.PostalCode,
+       Customers.Country,
+       (Employees.FirstName + ' ' + Employees.LastName) AS Salesperson, 
+       Orders.OrderID,
+       Orders.OrderDate,
+       Orders.RequiredDate,
+       Orders.ShippedDate, 
+       Shippers.CompanyName As ShipperName,
+       OrderDetails.ProductID,
+       Products.ProductName, 
+       OrderDetails.UnitPrice,
+       OrderDetails.Quantity,
+       OrderDetails.Discount, 
+       (OrderDetails.UnitPrice*Quantity*(1-Discount)) AS ExtendedPrice,
+       Orders.Freight 
+FROM Customers 
+  JOIN Orders ON Customers.CustomerID = Orders.CustomerID  
+  JOIN Employees ON Employees.EmployeeID = Orders.EmployeeID    
+  JOIN OrderDetails ON Orders.OrderID = OrderDetails.OrderID     
+  JOIN Products ON Products.ProductID = OrderDetails.ProductID      
+  JOIN Shippers ON Shippers.ShipperID = Orders.ShipVia;
+
+SELECT * FROM Invoices;
+
+
+--  Add View "Orders Qry" ----This is the order related query.
+
+CREATE VIEW OrdersQry AS
+SELECT Orders.OrderID,
+       Orders.CustomerID,
+       Orders.EmployeeID, 
+       Orders.OrderDate, 
+       Orders.RequiredDate,
+       Orders.ShippedDate, 
+       Orders.ShipVia, 
+       Orders.Freight,
+       Orders.ShipName, 
+       Orders.ShipAddress, 
+       Orders.ShipCity,
+       Orders.ShipRegion,
+       Orders.ShipPostalCode,
+       Orders.ShipCountry,
+       Customers.CompanyName,
+       Customers.Address,
+       Customers.City,
+       Customers.Region,
+       Customers.PostalCode, 
+       Customers.Country
+FROM Customers 
+     JOIN Orders ON Customers.CustomerID = Orders.CustomerID;     
+
+SELECT  * FROM OrdersQry;
+
+--  Add View "OrderSubtotals" -----In this table , Calculate subtotal of orders including discount if any .
+SELECT * FROM  OrderDetails;
+SELECT * FROM Orders;
+
+DROP VIEW IF EXISTS OrderSubtotals;
+
+CREATE VIEW OrderSubtotals AS
+SELECT OrderDetails.OrderID,
+Sum((OrderDetails.UnitPrice*Quantity*(1-Discount))) AS Subtotal
+FROM OrderDetails
+GROUP BY OrderDetails.OrderID;
+
+SELECT * FROM OrderSubtotals;
+
+-- Add View "Products Above Average Price" -------This is the Products with unit price greater than average unit price of all products.
+CREATE VIEW Product_Above_Average_Price AS
+SELECT Products.ProductName, 
+       Products.UnitPrice
+FROM Products
+WHERE Products.UnitPrice>(SELECT AVG(UnitPrice) From Products);  -- Example of SubQuery
+
+SELECT * FROM Product_Above_Average_Price;
+SELECT * FROM Products;
+
+-- Add View "Products by Category"  --------This is the inner join of Category and product table that shows only the products which are currently in supply.
+CREATE VIEW Products_by_Category AS
+SELECT Categories.CategoryName, 
+       Products.ProductName, 
+       Products.QuantityPerUnit, 
+       Products.UnitsInStock, 
+       Products.Discontinued
+FROM Categories 
+     INNER JOIN Products ON Categories.CategoryID = Products.CategoryID
+WHERE Products.Discontinued <> 1;
+
+
+SELECT * FROM Products_by_Category;
+
+
+--  Add View "Sales Totals by Amount" -------This shows orders in 1997 with total sales amount greater than 2500 .
+CREATE VIEW Sales_Totals_by_Amount AS
+SELECT OrderSubtotals.Subtotal AS SaleAmount, 
+               Orders.OrderID, 
+               Customers.CompanyName, 
+               Orders.ShippedDate
+FROM Customers 
+ JOIN Orders ON Customers.CustomerID = Orders.CustomerID
+ JOIN OrderSubtotals ON Orders.OrderID = OrderSubtotals.OrderID 
+WHERE (OrderSubtotals.Subtotal >2500) 
+AND (Orders.ShippedDate BETWEEN '1997-01-01' And '1997-12-31');
+
+SELECT * FROM Sales_Totals_by_Amount;
+
+
+-- Add View "Summary of Sales by Year" ----This is the summary of sales per year.
+CREATE VIEW Summary_of_Sales_by_Year AS
+SELECT Year(Orders.ShippedDate) As Shipped_Year, 
+			Sum(OrderSubtotals.Subtotal) AS Order_SubTotal
+FROM Orders 
+     INNER JOIN OrderSubtotals ON Orders.OrderID = OrderSubtotals.OrderID
+WHERE Orders.ShippedDate IS NOT NULL
+Group BY Year(Orders.ShippedDate);
+
+SELECT  * FROM Summary_of_Sales_by_Year;
+
+-- Add View "Order Details Extended" -----This is the order details with dicounted price
+CREATE VIEW Order_Details_Extended AS
+SELECT OrderDetails.OrderID, 
+       OrderDetails.ProductID, 
+       Products.ProductName, 
+	   OrderDetails.UnitPrice, 
+       OrderDetails.Quantity, 
+       OrderDetails.Discount, 
+      (OrderDetails.UnitPrice*Quantity*(1-Discount)) AS ExtendedPrice
+FROM Products 
+     JOIN OrderDetails ON Products.ProductID = OrderDetails.ProductID;
+
+SELECT * FROM Order_Details_Extended;
+
+
+# -------------------------------------------------------------------------------------------------------------- #
+
+-- Add Procedure "CustOrderHist" (This SP shows Customer order History for a given customer ID)
+DROP PROCEDURE IF EXISTS CustOrderHist;
+
+DELIMITER //
+CREATE PROCEDURE CustOrderHist(AtCustomerID varchar(5))
+BEGIN
+SELECT ProductName,
+    SUM(Quantity) as TOTAL
+FROM Products P,
+     Orderdetails OD,
+     Orders O,
+     Customers C
+WHERE C.CustomerID = AtCustomerID
+  AND C.CustomerID = O.CustomerID
+  AND O.OrderID = OD.OrderID
+  AND OD.ProductID = P.ProductID
+GROUP BY ProductName;
+END //
+DELIMITER ;
+
+CALL CustOrderHist('ALFKI');
+SELECT * FROM customers;
+
+
+-- Add Procedure "Employee Sales by Country"--------This is the SP for sales by employee during a date range.---
+SELECT * FROM Employees;
+SELECT * FROM OrderSubtotals;
+SELECT * FROM Orders;
+DROP PROCEDURE IF EXISTS EmployeeSalesbyCountry;
+
+DELIMITER //
+CREATE PROCEDURE EmployeeSalesbyCountry(AtBeginning_Date Datetime,AtEnding_Date Datetime)
+BEGIN
+  SELECT Employees.Country,
+         Employees.LastName,
+         Employees.FirstName,
+		 Orders.ShippedDate,
+         Orders.OrderID,
+		 OrderSubtotals.Subtotal AS SaleAmount
+FROM Employees
+ JOIN Orders ON Employees.EmployeeID = Orders.EmployeeID
+ JOIN OrderSubtotals ON Orders.OrderID = OrderSubtotals.OrderID
+WHERE Orders.ShippedDate Between AtBeginning_Date And AtEnding_Date;
+END //
+DELIMITER ;
+
+CALL EmployeeSalesbyCountry('1992-05-01', '1996-07-16');
+
+
+-- Add Procedure "Employee Sales by Year"-----------------This is the summary of sales per year.
+DROP PROCEDURE IF EXISTS SalesbyYear;
+
+DELIMITER //
+CREATE PROCEDURE SalesbyYear(AtBeginning_Date Datetime, AtEnding_Date Datetime)
+BEGIN
+    SELECT Orders.ShippedDate,
+	  Orders.OrderID,
+	  OrderSubtotals.Subtotal,
+	  ShippedDate AS Year
+FROM Orders  JOIN OrderSubtotals ON Orders.OrderID = OrderSubtotals.OrderID
+WHERE Orders.ShippedDate Between AtBeginning_Date And AtEnding_Date;
+END //
+DELIMITER ;
+
+CALL SalesbyYear ('1996-01-01', '1996-12-30');
+
+
+-- Add Procedure "sp_Employees_SelectAll" ---------------------This Shows Employees table details.
+
+
+DROP PROCEDURE IF EXISTS sp_Employees_SelectAll;
+
+DELIMITER //
+CREATE PROCEDURE sp_Employees_SelectAll()
+BEGIN
+SELECT * FROM Employees;
+END //
+DELIMITER ;
+
+CALL sp_Employees_SelectAll();
+
+-- Add Procedure "sp_Employees_SelectRow"  --------------This SP shows perticular table which Employee ID is passes as a parameter.
+DROP PROCEDURE IF EXISTS sp_Employees_SelectRow;
+DELIMITER //
+CREATE PROCEDURE sp_Employees_SelectRow(In AtEmployeeID INTEGER)
+BEGIN
+SELECT * FROM Employees Where EmployeeID = AtEmployeeID;
+END //
+DELIMITER ;
+
+CALL sp_Employees_SelectRow(5);
+
+
+-- ADD  FUNCTION------------------------------------
+
+
+-- Add Function "Employee Sales by Year"------------------------This Function Gives the Customer level according to customer Credit.
+SELECT * FROM OrderSubtotals;
+DROP FUNCTION IF EXISTS customerLevel;
+DELIMITER //
+CREATE FUNCTION CustomerLevel(
+	credit DECIMAL(10,2)
+) 
+RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+    DECLARE customerLevel VARCHAR(20);
+    IF credit > 1000 THEN
+		SET customerLevel = 'PLATINUM';
+    ELSEIF (credit <= 1000 AND 
+			credit >= 500) THEN
+        SET customerLevel = 'GOLD';
+    ELSEIF credit < 500 THEN
+        SET customerLevel = 'SILVER';
+    END IF;
+	RETURN (customerLevel);
+END//
+DELIMITER ;
+
+SELECT
+	OrderID,
+    Subtotal,
+    customerLevel(Subtotal)
+FROM
+	OrderSubtotals;
+ 
+ 
+-- ---- Add Trigger ---------------This trigger would record all changes to price in price log table.------------
+    
+SELECT * FROM Products;
+DROP TRIGGER IF EXISTS before_products_update;
+-- -- -Create A table for Price Log----------------------
+CREATE Table PriceLogs (
+    P_ID INTEGER AUTO_INCREMENT,
+    ProductID INTEGER NOT NULL,
+    Price DECIMAL(10,2) NOT NULL,
+    Updated_at TIMESTAMP NOT NULL 
+			DEFAULT CURRENT_TIMESTAMP 
+            ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (P_ID),
+    FOREIGN KEY (ProductID)
+        REFERENCES Products(ProductID)
+        ON DELETE CASCADE 
+        ON UPDATE CASCADE
+);
+
+
+DELIMITER //
+CREATE TRIGGER before_products_update 
+   BEFORE UPDATE ON Products 
+   FOR EACH ROW 
+BEGIN
+     IF OLD.UnitPrice <> NEW.UnitPrice THEN
+         INSERT INTO PriceLogs(ProductID,Price)
+         VALUES(old.ProductID,old.UnitPrice);
+     END IF;
+END//
+DELIMITER ;
+
+SELECT 
+    ProductID,UnitPrice 
+FROM 
+    Products
+WHERE 
+    ProductID = '1';
+    
+UPDATE Products
+SET UnitPrice = 25
+WHERE ProductID = '1';
+
+SELECT * FROM products;
+SELECT * FROM PriceLogs;
+-- Add Event -----------------An Event created on Employee Birth Date and message .This Event is runs every day once and check birthday of employees .
+
+DROP  TABLE BirthDay_Messages_Event ;
+CREATE TABLE BirthDay_Messages_Event (
+	EmployeeID MEDIUMINT NOT NULL,
+    Emp_Name VARCHAR(25) NOT NULL,
+    Msg_ID INT PRIMARY KEY AUTO_INCREMENT,
+    Message VARCHAR(25) NOT NULL,
+    Created_At TIMESTAMP NOT NULL
+    DEFAULT CURRENT_TIMESTAMP, 
+    FOREIGN KEY (EmployeeID)
+    REFERENCES Employees(EmployeeID)
+);
+
+-- EVENT CREATE-------------------------------------------
+SET GLOBAL event_scheduler = ON;
+DELIMITER //
+CREATE EVENT Reminder 
+   ON Schedule EVERY 1 DAY
+   STARTS NOW()
+   ON COMPLETION PRESERVE
+   ENABLE
+DO BEGIN
+		INSERT INTO BirthDay_Messages_Event(EmployeeID,Message,Emp_Name) 
+        SELECT EmployeeID ,"Happy Birthday" as Message,concat(FirstName,' ',LastName) as Emp_Name  FROM Employees WHERE MONTH(BirthDate) = MONTH(NOW()) AND DAY(BirthDate) = DAY(NOW());
+END //
+DELIMITER ;
+
+SELECT * FROM BirthDay_Messages_Event;
+
+SHOW EVENTS; -- FROM tradersDB;
+DROP EVENT Reminder;
+ALTER EVENT Reminder DISABLE; -- enable;
+
+SELECT * FROM BirthDay_Messages_Event;
+
+SHOW EVENTS FROM tradersDB;
+
+SELECT * FROM Employees;
+INSERT INTO Employees 
+(LastName,FirstName,JobTitle,TitleOfCourtesy,BirthDate,HireDate,Address,City,Region,PostalCode,Country,HomePhone,Extension,Photo,Notes,ReportsTo,PhotoPath,Salary)
+VALUES
+('thomas','Bob','Sales Representative','Ms.','1948-07-10','1992-05-01','555 - 20th Ave. E.Apt. 2A','Seattle','WA','98122','USA','(206) 555-9857','5467','Img1.jpg','Education includes a BA in psychology from Colorado State University in 1970.  She also completed "The Art of the Cold Call."  Nancy is a member of Toastmasters International.',2,'C:/DataStorage/CFG_Project_FILE/Img1.jpg','2954.55'),
+('thom','ryle','Sales Representative','Mrs.','1948-07-10','1992-07-01','667 - 22Ave. E.Apt. 2A','Seattle','WA','98122','USA','(206) 999-9857','5678','Img2.jpg','Education includes a BA in psychology from Colorado State University in 1970.  She also completed "The Art of the Cold Call."  Nancy is a member of Toastmasters International.',2,'C:/DataStorage/CFG_Project_FILE/Img1.jpg','2754.58');
+
+
